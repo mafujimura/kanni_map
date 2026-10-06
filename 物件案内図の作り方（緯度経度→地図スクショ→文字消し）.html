@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>物件案内図の作り方｜緯度経度 → 地図スクショ → 文字消し</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F2F5F3; --sheet:#FFFFFF; --ink:#1D2A30; --mute:#5B6B71;
+  --line:#2C6E9B; --pin:#D63A2C; --road:#E9B949; --grid:rgba(44,110,155,.08);
+  --rule:#D5DEDB;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#141B1E; --sheet:#1C2529; --ink:#E6ECEA; --mute:#9AAAAF;
+    --line:#5FA3D3; --pin:#F0624F; --road:#E3B64B; --grid:rgba(95,163,211,.08); --rule:#2E3A3F;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141B1E; --sheet:#1C2529; --ink:#E6ECEA; --mute:#9AAAAF;
+  --line:#5FA3D3; --pin:#F0624F; --road:#E3B64B; --grid:rgba(95,163,211,.08); --rule:#2E3A3F;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0; color:var(--ink); background:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:32px 32px;
+  font-family:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+  font-size:16px; line-height:1.85;
+}
+h1,h2,h3{font-family:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;line-height:1.35;margin:0}
+a{color:var(--line);word-break:break-all}
+a:focus-visible,button:focus-visible{outline:3px solid var(--road);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto;padding:48px 20px 80px}
+
+header{margin-bottom:40px}
+header h1{font-size:clamp(28px,6vw,40px);font-weight:900;letter-spacing:.02em}
+header p{color:var(--mute);margin:12px 0 0;max-width:36em}
+.overview{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px;font-size:14px}
+.overview span{background:var(--sheet);border:1px solid var(--rule);padding:6px 12px;border-radius:999px}
+.overview b{color:var(--line)}
+
+/* 路線図 */
+.leg{position:relative;margin-top:48px}
+.leg-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.leg-badge{flex:none;width:44px;height:44px;border-radius:50%;background:var(--line);color:#fff;
+  display:grid;place-items:center;font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:18px}
+.leg h2{font-size:22px}
+.leg-site{margin:0 0 8px 56px;font-size:14px;color:var(--mute)}
+ol.stops{list-style:none;margin:0;padding:0 0 0 56px;position:relative;counter-reset:s}
+ol.stops::before{content:"";position:absolute;left:20px;top:0;bottom:24px;width:4px;background:var(--line);border-radius:2px}
+ol.stops li{position:relative;margin:0 0 20px;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
+ol.stops li::before{content:"";position:absolute;left:-44px;top:20px;width:16px;height:16px;border-radius:50%;
+  background:var(--sheet);border:4px solid var(--line)}
+ol.stops h3{font-size:17px;margin-bottom:4px}
+ol.stops p{margin:6px 0 0}
+.ui{display:inline-block;background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:0 6px;font-weight:700;white-space:nowrap}
+.key{display:inline-block;border:1px solid var(--mute);border-bottom-width:3px;border-radius:5px;padding:0 6px;font-size:14px;white-space:nowrap}
+
+.alert{border-left:6px solid var(--pin);background:var(--sheet);padding:12px 16px;border-radius:0 8px 8px 0;margin-top:10px}
+.alert strong{color:var(--pin)}
+.tip{color:var(--mute);font-size:14px;margin-top:8px}
+
+/* ピン合わせ図 */
+.align{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.align figure{margin:0;text-align:center;font-size:13px;color:var(--mute)}
+.align svg{display:block;width:120px;height:90px;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+
+.prompt{margin-top:10px;background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:14px 16px;font-size:15px;white-space:pre-wrap}
+button.copy{margin-top:8px;font:inherit;font-size:14px;font-weight:700;background:var(--line);color:#fff;border:0;border-radius:6px;padding:6px 14px;cursor:pointer}
+
+.terminus{margin-top:48px;background:var(--sheet);border:2px solid var(--ink);border-radius:12px;padding:20px 22px}
+.terminus h2{font-size:20px;margin-bottom:8px}
+.terminus ul{margin:0;padding-left:1.2em}
+footer{margin-top:40px;font-size:13px;color:var(--mute)}
+@media (max-width:480px){
+  ol.stops{padding-left:44px} ol.stops::before{left:14px} ol.stops li::before{left:-38px}
+  .leg-site{margin-left:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>物件の案内図を<br>スクショで作る手順</h1>
+  <p>住所から緯度経度を調べ、簡易地図を作ってスクリーンショットを撮り、AIで文字を消したベース地図に仕上げます。</p>
+  <div class="overview">
+    <span><b>A</b> 緯度経度を調べる</span>
+    <span><b>B</b> 地図をスクショ</span>
+    <span><b>C</b> Geminiで文字を消す</span>
+  </div>
+</header>
+
+<!-- A -->
+<section class="leg">
+  <div class="leg-head"><div class="leg-badge">A</div><h2>緯度経度を調べる</h2></div>
+  <p class="leg-site">使うサイト：<a href="https://www.web-gis.jp/MapsInfo/latlon_v7.html" target="_blank" rel="noopener">位置座標読取り・確認・移動ウェブサイト</a></p>
+  <ol class="stops">
+    <li>
+      <h3>住所を入れて移動する</h3>
+      <p><span class="ui">中心点の移動機能その2</span> の <span class="ui">住所／ランドマーク</span> 欄に物件の住所を入力し、移動ボタンを押します。</p>
+    </li>
+    <li>
+      <h3>赤いピンと中心の四角を重ねる</h3>
+      <p>地図をドラッグして、物件位置の<strong>赤いピン</strong>が画面中央の<strong>四角い中心マーク</strong>にぴったり重なるようにします。ここがずれていると、後の地図もずれます。</p>
+      <div class="align" aria-hidden="true">
+        <figure>
+          <svg viewBox="0 0 120 90"><rect x="50" y="35" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)"/><circle cx="84" cy="24" r="7" fill="var(--pin)"/><path d="M84 31 L84 40" stroke="var(--pin)" stroke-width="3"/></svg>
+          <figcaption>ずれている</figcaption>
+        </figure>
+        <figure>
+          <svg viewBox="0 0 120 90"><rect x="50" y="35" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink)"/><circle cx="60" cy="38" r="7" fill="var(--pin)"/><path d="M60 45 L60 45" stroke="var(--pin)" stroke-width="3"/></svg>
+          <figcaption>重なっている（OK）</figcaption>
+        </figure>
+      </div>
+    </li>
+    <li>
+      <h3>表示された緯度経度をコピーする</h3>
+      <p><span class="ui">中心点の位置情報</span> に出ている <span class="ui">Google Maps座標</span>（「緯度, 経度」の形）をコピーします。</p>
+    </li>
+  </ol>
+</section>
+
+<!-- B -->
+<section class="leg">
+  <div class="leg-head"><div class="leg-badge">B</div><h2>地図を作ってスクショする</h2></div>
+  <p class="leg-site">使うサイト：<a href="https://www.design-map.com/" target="_blank" rel="noopener">かんたんマップ自動作成ツール</a></p>
+  <ol class="stops">
+    <li>
+      <h3>座標を貼り付けてセット</h3>
+      <p><span class="ui">1.目的地の座標をセット</span> の欄に、A でコピーした緯度経度を貼り付けて <span class="ui">セット</span> を押します。</p>
+    </li>
+    <li>
+      <h3>駅などが入るように位置を調整</h3>
+      <p><span class="ui">2.位置の調整</span> で地図を拡大・移動し、最寄り駅や目印になる道路が収まる範囲にします。</p>
+    </li>
+    <li>
+      <h3>スクリーンショットを撮る</h3>
+      <div class="alert"><strong>ダウンロードボタンは使えません。</strong>必ずスクリーンショットで保存してください。</div>
+      <p>Windows：<span class="key">Win</span> + <span class="key">Shift</span> + <span class="key">S</span>　Mac：<span class="key">⌘</span> + <span class="key">Shift</span> + <span class="key">4</span><br>地図部分だけを範囲選択して撮ります。</p>
+    </li>
+  </ol>
+</section>
+
+<!-- C -->
+<section class="leg">
+  <div class="leg-head"><div class="leg-badge">C</div><h2>Geminiで文字を消す</h2></div>
+  <p class="leg-site">使うサイト：<a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini</a></p>
+  <ol class="stops">
+    <li>
+      <h3>スクショをアップして文字なし画像を生成</h3>
+      <p>B で撮った画像を貼り付け、次のように依頼します。</p>
+      <div class="prompt" id="gprompt">この地図画像から、駅名・地名・道路名などの文字をすべて消した画像を作ってください。道路・線路・建物の形や位置、色、縮尺は元の画像から変えないでください。</div>
+      <button class="copy" type="button" data-target="gprompt">依頼文をコピー</button>
+      <p class="tip">生成後は元のスクショと見比べて、道路や線路の形が変わっていないか確認してください。崩れていたら作り直します。</p>
+    </li>
+    <li>
+      <h3>駅名などは自分で上から入れる</h3>
+      <p>元のスクショを見ながら駅の位置を確認し、駅名や物件名などの文字情報は自分で上に載せて仕上げます。</p>
+    </li>
+  </ol>
+</section>
+
+<section class="terminus">
+  <h2>うまくいかないとき</h2>
+  <ul>
+    <li>座標をセットしても場所がずれる → A の手順で赤いピンと中心の四角がきちんと重なっているか確認し、座標を取り直す。</li>
+    <li>座標が貼り付けられない → 「35.xxxx, 139.xxxx」のように緯度が先・経度が後になっているか確認。</li>
+    <li>Geminiの画像で道が消えたり増えたりした → 依頼文はそのままでもう一度生成する。</li>
+  </ul>
+</section>
+
+<footer>社内向け手順書</footer>
+</div>
+
+<script>
+document.querySelectorAll("button.copy").forEach(function(btn){
+  btn.addEventListener("click",function(){
+    var t=document.getElementById(btn.dataset.target).textContent;
+    var done=function(){btn.textContent="コピーしました";setTimeout(function(){btn.textContent="依頼文をコピー"},1800)};
+    if(navigator.clipboard){navigator.clipboard.writeText(t).then(done,function(){})}
+  });
+});
+</script>
+</body>
+</html>
